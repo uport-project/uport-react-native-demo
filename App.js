@@ -10,18 +10,20 @@ import {
   TextInput,
 } from 'react-native'
 import configureUportConnect from 'react-native-uport-connect'
-
+import * as MNID from 'mnid'
+import Web3 from 'web3'
 import styles from './styles'
-import configureSharesContract from './sharesContract'
+import {configureSharesContract, configureSimpleSharesContract} from './sharesContract'
 
-const { uport, MNID } = configureUportConnect({
+const uport = configureUportConnect({
   appName: 'uPort Demo',
   appAddress: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
   privateKey: 'c818c2665a8023102e430ef3b442f1915ed8dc3abcaffbc51c5394f03fc609e2',
 })
-const web3 = uport.getWeb3()
-const sharesContract = configureSharesContract(web3)
 
+let web3 = null
+let sharesContract = null
+const simpleSharesContract = configureSimpleSharesContract(new Web3(uport.getProvider()))
 
 export default class App extends Component {
 
@@ -30,6 +32,7 @@ export default class App extends Component {
     this.state = {
       name: null,
       avatar: null,
+      did: null,
       mnid: null,
       address: null,
       shares: 0,
@@ -40,39 +43,64 @@ export default class App extends Component {
       buySharesInProgress: null,
     }
     this.handleLogin = this.handleLogin.bind(this)
+    this.handleLoginResult = this.handleLoginResult.bind(this)
+    this.handleBuySharesResult = this.handleBuySharesResult.bind(this)
     this.handleLogout = this.handleLogout.bind(this)
     this.loadShares = this.loadShares.bind(this)
     this.buyShares = this.buyShares.bind(this)
     this.attestName = this.attestName.bind(this)
     this.attestRelationship = this.attestRelationship.bind(this)
+
+    uport.onResponse('login').then(payload => this.handleLoginResult(payload.res))
+    uport.onResponse('buyShares').then(payload => this.handleBuySharesResult(payload.res))
+  }
+
+  handleBuySharesResult (result) {
+    console.log(result)
+  }
+
+  handleLoginResult (result) {
+    if (!result) {
+      this.setState({
+        errorMessage: 'Access denied',
+        loginInProgress: null
+      })
+      return
+    }
+
+    this.setState({
+      name: result.name,
+      avatar: result.avatar,
+      did: result.address,
+      mnid: result.networkAddress,
+      address: MNID.decode(result.networkAddress).address,
+      loginInProgress: null,
+    })
+    web3 = new Web3(uport.getProvider())
+    sharesContract = configureSharesContract(uport)
+    
+    this.loadShares()
   }
 
   handleLogin () {
     this.setState({loginInProgress: true, errorMessage: null})
 
-    uport.requestCredentials({
+    uport.requestDisclosure({
       requested: ['name', 'avatar'],
-    }).then((result) => {
-      this.setState({
-        name: result.name,
-        avatar: result.avatar,
-        mnid: result.address,
-        address: MNID.decode(result.address).address,
-        loginInProgress: null,
-      })
-      this.loadShares()
-    }).catch( error => {
-      this.setState({
-        errorMessage: 'Access denied',
-        loginInProgress: null
-      })
+      accountType: 'keypair',
+      network_id: '0x4',
+      notifications: false,
+      exp: 1831738203,
+    })
+    .then((JWT) => {
+      return uport.requestMobile(JWT, 'login')
     })
   }
 
   loadShares() {
     this.setState({getSharesInProgress: true, errorMessage: null})
 
-    sharesContract.getShares.call(this.state.address, (error, sharesNumber) => {
+    simpleSharesContract.getShares.call(this.state.address, (error, sharesNumber) => {
       if (error) {
         console.log(error)
         this.setState({errorMessage: error.message})
@@ -85,7 +113,7 @@ export default class App extends Component {
   
   buyShares() {
     this.setState({buySharesInProgress: true, errorMessage: null})
-      sharesContract.updateShares(this.state.sharesToBuy, (error, txHash) => {
+      sharesContract.updateShares(this.state.sharesToBuy, {from: this.state.address}, (error, txHash) => {
         if (error) {
           console.log(error)
           this.setState({buySharesInProgress: false, errorMessage: 'Request rejected'})
@@ -107,26 +135,26 @@ export default class App extends Component {
           })
         }, 1000)
         
-      })  
+      }, 'buyShares')  
 
   }
 
   attestName() {
-    uport.attestCredentials({
+    uport.attest({
       sub: this.state.mnid,
       claim: {name: this.state.name},
       exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,  // 30 days from now
       uriHandler: (log) => { console.log(log) }
-    })    
+    }, 'nameClaim')    
   }
 
   attestRelationship() {
-    uport.attestCredentials({
+    uport.attest({
       sub: this.state.mnid,
       claim: {Relationship: 'User'},
       exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,  // 30 days from now
       uriHandler: (log) => { console.log(log) }
-    })    
+    }, 'relationshipClaim')    
   }
 
   handleLogout () {
@@ -177,6 +205,12 @@ export default class App extends Component {
                 {this.state.name}
               </Text>
             </View>
+              <Text style={styles.small}>
+                DID: {this.state.did}
+              </Text>
+              <Text style={styles.small}>
+                Address: {this.state.address}
+              </Text>
             <Text style={styles.h1}>
               Shares
             </Text>

@@ -3,13 +3,16 @@
   "version": "0.0.1",
   "private": true,
   "scripts": {
+    "local-uport": "yarn add file:./../react-native-uport-connect",
     "start": "node node_modules/react-native/local-cli/cli.js start",
     "test": "jest"
   },
   "dependencies": {
+    "mnid": "^0.1.1",
     "react": "^16.3.0-alpha.1",
     "react-native": "0.54.3",
-    "react-native-uport-connect": "^0.1.1"
+    "react-native-uport-connect": "file:./../react-native-uport-connect",
+    "web3": "0.19.1"
   },
   "devDependencies": {
     "babel-jest": "22.4.3",

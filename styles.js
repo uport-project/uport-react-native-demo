@@ -29,6 +29,12 @@ export default StyleSheet.create({
     margin: 10,
     color: '#FFFFFF'
   },
+  small: {
+    fontSize: 10,
+    textAlign: 'center',
+    margin: 5,
+    color: '#FFFFFF'
+  },
   p: {
     marginBottom: 10,
     fontSize: 15,
