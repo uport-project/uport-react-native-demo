@@ -57,7 +57,7 @@ export default class App extends Component {
         name: result.name,
         avatar: result.avatar,
         mnid: result.address,
-        address: MNID.decode(result.address).address,
+        address: MNID.decode(result.networkAddress).address,
         loginInProgress: null,
       })
       this.loadShares()
