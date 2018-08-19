@@ -1,4 +1,5 @@
-import React, { Component } from 'react'
+import React, { Component } from 'react';
+import configureUportConnect from 'react-native-uport-connect'
 import {
   Text,
   View,
@@ -8,15 +9,15 @@ import {
   ActivityIndicator,
   StatusBar,
   TextInput,
+  AsyncStorage,
 } from 'react-native'
-import configureUportConnect from 'react-native-uport-connect'
-import * as MNID from 'mnid'
 import Web3 from 'web3'
 import styles from './styles'
 import {configureSharesContract, configureSimpleSharesContract} from './sharesContract'
 
 const uport = configureUportConnect({
   appName: 'uPort Demo',
+  appUrlScheme: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
   appAddress: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
   privateKey: 'c818c2665a8023102e430ef3b442f1915ed8dc3abcaffbc51c5394f03fc609e2',
 })
@@ -49,13 +50,40 @@ export default class App extends Component {
     this.loadShares = this.loadShares.bind(this)
     this.buyShares = this.buyShares.bind(this)
     this.attestName = this.attestName.bind(this)
-    this.attestRelationship = this.attestRelationship.bind(this)
+    this.signClaim = this.signClaim.bind(this)
 
-    uport.onResponse('login').then(payload => this.handleLoginResult(payload.res))
-    uport.onResponse('buyShares').then(payload => this.handleBuySharesResult(payload.res))
+    uport.onResponse('disclosureReq').then(payload => this.handleLoginResult(payload.res))
+    uport.onResponse('updateShares').then(payload => this.handleBuySharesResult(payload.res))
+    uport.onResponse('signClaim').then(payload => this.handleSignClaimResult(payload))
+
+    AsyncStorage.getItem('uportState').then(json => {
+      const uportState = JSON.parse(json)
+      this.setState(uportState)
+      uport.setState(uportState)
+      web3 = new Web3(uport.getProvider())
+      sharesContract = configureSharesContract(uport)
+      this.loadShares()
+    })
   }
 
-  handleBuySharesResult (result) {
+  handleBuySharesResult (txHash) {
+    const interval = setInterval(() => {
+      web3.eth.getTransactionReceipt(txHash, (error, response) => {
+        if (error) {
+          clearInterval(interval)
+          this.setState({buySharesInProgress: false, errorMessage: error.message})
+        }
+        if (response) {
+          clearInterval(interval)
+          this.setState({buySharesInProgress: false})
+          this.loadShares()
+        }
+      })
+    }, 1000)
+
+  }
+
+  handleSignClaimResult (result) {
     console.log(result)
   }
 
@@ -68,12 +96,15 @@ export default class App extends Component {
       return
     }
 
+    const uportState = uport.state
+    AsyncStorage.setItem('uportState', JSON.stringify(uportState))
+
     this.setState({
       name: result.name,
       avatar: result.avatar,
-      did: result.address,
-      mnid: result.networkAddress,
-      address: MNID.decode(result.networkAddress).address,
+      did: result.did,
+      mnid: result.mnid,
+      address: result.address,
       loginInProgress: null,
     })
     web3 = new Web3(uport.getProvider())
@@ -90,10 +121,6 @@ export default class App extends Component {
       accountType: 'keypair',
       network_id: '0x4',
       notifications: false,
-      exp: 1831738203,
-    })
-    .then((JWT) => {
-      return uport.requestMobile(JWT, 'login')
     })
   }
 
@@ -102,67 +129,44 @@ export default class App extends Component {
 
     simpleSharesContract.getShares.call(this.state.address, (error, sharesNumber) => {
       if (error) {
-        console.log(error)
         this.setState({errorMessage: error.message})
         throw error
       }
       this.setState({getSharesInProgress: false, shares: sharesNumber.toNumber()})
     })
-
   }
   
   buyShares() {
     this.setState({buySharesInProgress: true, errorMessage: null})
-      sharesContract.updateShares(this.state.sharesToBuy, {from: this.state.address}, (error, txHash) => {
-        if (error) {
-          console.log(error)
-          this.setState({buySharesInProgress: false, errorMessage: 'Request rejected'})
-          return
-        }
-        console.log('txHash', txHash)
-        const interval = setInterval(() => {
-          web3.eth.getTransactionReceipt(txHash, (error, response) => {
-            if (error) {
-              clearInterval(interval)
-              this.setState({buySharesInProgress: false, errorMessage: error.message})
-            }
-            if (response) {
-              clearInterval(interval)
-              console.log(response)
-              this.setState({buySharesInProgress: false})
-              this.loadShares()
-            }
-          })
-        }, 1000)
-        
-      }, 'buyShares')  
-
+    sharesContract.updateShares(this.state.sharesToBuy, 'updateShares')
   }
 
   attestName() {
     uport.attest({
-      sub: this.state.mnid,
+      sub: this.state.did,
       claim: {name: this.state.name},
       exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,  // 30 days from now
-      uriHandler: (log) => { console.log(log) }
     }, 'nameClaim')    
   }
 
-  attestRelationship() {
-    uport.attest({
-      sub: this.state.mnid,
-      claim: {Relationship: 'User'},
-      exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,  // 30 days from now
-      uriHandler: (log) => { console.log(log) }
-    }, 'relationshipClaim')    
+  signClaim() {
+    uport.createVerificationRequest({
+      sub: this.state.did,
+      unsignedClaim: {ClaimType: 'Claim value'},
+    }, 'signClaim')    
   }
 
   handleLogout () {
-    this.setState({
+    const state = {
       name: null,
       avatar: null,
       address: null,
-    })
+      mnid: null,
+      did: null,
+    }
+    this.setState(state)
+    AsyncStorage.setItem('uportState', JSON.stringify(state))
+
   }
 
   render() {
@@ -257,10 +261,18 @@ export default class App extends Component {
               </View>
             </TouchableOpacity>
             
-            <TouchableOpacity onPress={this.attestRelationship}>
+            <TouchableOpacity onPress={this.signClaim}>
               <View style={styles.button}>
                 <Text style={styles.buttonLabel}>
-                  Attest Relationship
+                  Sign claim
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={this.handleLogout}>
+              <View style={styles.button}>
+                <Text style={styles.buttonLabel}>
+                  Logout
                 </Text>
               </View>
             </TouchableOpacity>
@@ -268,6 +280,7 @@ export default class App extends Component {
           </View>}
         </ScrollView>
       </View>
-    );
+    )
   }
 }
+
