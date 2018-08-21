@@ -56,25 +56,12 @@ export default class App extends Component {
     uport.onResponse('updateShares').then(payload => this.handleBuySharesResult(payload.res))
     uport.onResponse('signClaim').then(payload => this.handleSignClaimResult(payload))
 
-<<<<<<< HEAD
     AsyncStorage.getItem('uportState').then(json => {
       const uportState = JSON.parse(json)
       this.setState(uportState)
       uport.setState(uportState)
       web3 = new Web3(uport.getProvider())
       sharesContract = configureSharesContract(uport)
-=======
-    uport.requestCredentials({
-      requested: ['name', 'avatar'],
-    }).then((result) => {
-      this.setState({
-        name: result.name,
-        avatar: result.avatar,
-        mnid: result.address,
-        address: MNID.decode(result.networkAddress).address,
-        loginInProgress: null,
-      })
->>>>>>> master
       this.loadShares()
     })
   }
@@ -158,7 +145,7 @@ export default class App extends Component {
     uport.attest({
       sub: this.state.did,
       claim: {name: this.state.name},
-      exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,  // 30 days from now
+      exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,
     }, 'nameClaim')    
   }
 
