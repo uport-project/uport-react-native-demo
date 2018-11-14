@@ -1,4 +1,5 @@
-import React, { Component } from 'react'
+import React, { Component } from 'react';
+import configureUportConnect from 'react-native-uport-connect'
 import {
   Text,
   View,
@@ -8,20 +9,22 @@ import {
   ActivityIndicator,
   StatusBar,
   TextInput,
+  AsyncStorage,
 } from 'react-native'
-import configureUportConnect from 'react-native-uport-connect'
-
+import Web3 from 'web3'
 import styles from './styles'
-import configureSharesContract from './sharesContract'
+import {configureSharesContract, configureSimpleSharesContract} from './sharesContract'
 
-const { uport, MNID } = configureUportConnect({
+const uport = configureUportConnect({
   appName: 'uPort Demo',
+  appUrlScheme: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
   appAddress: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
   privateKey: 'c818c2665a8023102e430ef3b442f1915ed8dc3abcaffbc51c5394f03fc609e2',
 })
-const web3 = uport.getWeb3()
-const sharesContract = configureSharesContract(web3)
 
+let web3 = null
+let sharesContract = null
+const simpleSharesContract = configureSimpleSharesContract(new Web3(uport.getProvider()))
 
 export default class App extends Component {
 
@@ -30,6 +33,7 @@ export default class App extends Component {
     this.state = {
       name: null,
       avatar: null,
+      did: null,
       mnid: null,
       address: null,
       shares: 0,
@@ -40,101 +44,129 @@ export default class App extends Component {
       buySharesInProgress: null,
     }
     this.handleLogin = this.handleLogin.bind(this)
+    this.handleLoginResult = this.handleLoginResult.bind(this)
+    this.handleBuySharesResult = this.handleBuySharesResult.bind(this)
     this.handleLogout = this.handleLogout.bind(this)
     this.loadShares = this.loadShares.bind(this)
     this.buyShares = this.buyShares.bind(this)
     this.attestName = this.attestName.bind(this)
-    this.attestRelationship = this.attestRelationship.bind(this)
+    this.signClaim = this.signClaim.bind(this)
+
+    uport.onResponse('disclosureReq').then(res => this.handleLoginResult(res.payload))
+    uport.onResponse('updateShares').then(res => this.handleBuySharesResult(res.payload))
+    uport.onResponse('verSigReq').then(res => this.handleSignClaimResult(res.payload))
+
+    AsyncStorage.getItem('uportState').then(json => {
+      const uportState = JSON.parse(json)
+      this.setState(uportState)
+      uport.setState(uportState)
+      web3 = new Web3(uport.getProvider())
+      sharesContract = configureSharesContract(uport)
+      this.loadShares()
+    })
+  }
+
+  handleBuySharesResult (txHash) {
+    const interval = setInterval(() => {
+      web3.eth.getTransactionReceipt(txHash, (error, response) => {
+        if (error) {
+          clearInterval(interval)
+          this.setState({buySharesInProgress: false, errorMessage: error.message})
+        }
+        if (response) {
+          clearInterval(interval)
+          this.setState({buySharesInProgress: false})
+          this.loadShares()
+        }
+      })
+    }, 1000)
+
+  }
+
+  handleSignClaimResult (result) {
+    console.log('signed claim', result)
+  }
+
+  handleLoginResult (result) {
+    if (!result) {
+      this.setState({
+        errorMessage: 'Access denied',
+        loginInProgress: null
+      })
+      return
+    }
+
+    const uportState = uport.state
+    AsyncStorage.setItem('uportState', JSON.stringify(uportState))
+
+    this.setState({
+      name: result.name,
+      avatar: result.avatar,
+      did: result.did,
+      mnid: result.mnid,
+      address: result.address,
+      loginInProgress: null,
+    })
+    web3 = new Web3(uport.getProvider())
+    sharesContract = configureSharesContract(uport)
+    
+    this.loadShares()
   }
 
   handleLogin () {
     this.setState({loginInProgress: true, errorMessage: null})
 
-    uport.requestCredentials({
+    uport.requestDisclosure({
       requested: ['name', 'avatar'],
-    }).then((result) => {
-      this.setState({
-        name: result.name,
-        avatar: result.avatar,
-        mnid: result.address,
-        address: MNID.decode(result.networkAddress).address,
-        loginInProgress: null,
-      })
-      this.loadShares()
-    }).catch( error => {
-      this.setState({
-        errorMessage: 'Access denied',
-        loginInProgress: null
-      })
+      accountType: 'keypair',
+      network_id: '0x4',
+      notifications: false,
     })
   }
 
   loadShares() {
     this.setState({getSharesInProgress: true, errorMessage: null})
 
-    sharesContract.getShares.call(this.state.address, (error, sharesNumber) => {
+    simpleSharesContract.getShares.call(this.state.address, (error, sharesNumber) => {
       if (error) {
-        console.log(error)
         this.setState({errorMessage: error.message})
         throw error
       }
       this.setState({getSharesInProgress: false, shares: sharesNumber.toNumber()})
     })
-
   }
   
   buyShares() {
     this.setState({buySharesInProgress: true, errorMessage: null})
-      sharesContract.updateShares(this.state.sharesToBuy, (error, txHash) => {
-        if (error) {
-          console.log(error)
-          this.setState({buySharesInProgress: false, errorMessage: 'Request rejected'})
-          return
-        }
-        console.log('txHash', txHash)
-        const interval = setInterval(() => {
-          web3.eth.getTransactionReceipt(txHash, (error, response) => {
-            if (error) {
-              clearInterval(interval)
-              this.setState({buySharesInProgress: false, errorMessage: error.message})
-            }
-            if (response) {
-              clearInterval(interval)
-              console.log(response)
-              this.setState({buySharesInProgress: false})
-              this.loadShares()
-            }
-          })
-        }, 1000)
-        
-      })  
-
+    sharesContract.updateShares(this.state.sharesToBuy, 'updateShares')
   }
 
   attestName() {
-    uport.attestCredentials({
-      sub: this.state.mnid,
+    uport.sendVerification({
+      sub: this.state.did,
       claim: {name: this.state.name},
-      exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,  // 30 days from now
-      uriHandler: (log) => { console.log(log) }
-    })    
+      exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,
+    }, 'nameClaim')    
   }
 
-  attestRelationship() {
-    uport.attestCredentials({
-      sub: this.state.mnid,
-      claim: {Relationship: 'User'},
-      exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,  // 30 days from now
-      uriHandler: (log) => { console.log(log) }
+  signClaim() {
+    uport.requestVerificationSignature({
+      sub: this.state.did,
+      unsignedClaim: {ClaimType: 'Claim value'},
     })    
   }
 
   handleLogout () {
-    this.setState({
+    const state = {
       name: null,
       avatar: null,
       address: null,
-    })
+      mnid: null,
+      did: null,
+    }
+    this.setState(state)
+    AsyncStorage.setItem('uportState', JSON.stringify(state))
+
   }
 
   render() {
@@ -177,6 +209,12 @@ export default class App extends Component {
                 {this.state.name}
               </Text>
             </View>
+              <Text style={styles.small}>
+                DID: {this.state.did}
+              </Text>
+              <Text style={styles.small}>
+                Address: {this.state.address}
+              </Text>
             <Text style={styles.h1}>
               Shares
             </Text>
@@ -223,10 +261,18 @@ export default class App extends Component {
               </View>
             </TouchableOpacity>
             
-            <TouchableOpacity onPress={this.attestRelationship}>
+            <TouchableOpacity onPress={this.signClaim}>
               <View style={styles.button}>
                 <Text style={styles.buttonLabel}>
-                  Attest Relationship
+                  Sign claim
+                </Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={this.handleLogout}>
+              <View style={styles.button}>
+                <Text style={styles.buttonLabel}>
+                  Logout
                 </Text>
               </View>
             </TouchableOpacity>
@@ -234,6 +280,7 @@ export default class App extends Component {
           </View>}
         </ScrollView>
       </View>
-    );
+    )
   }
 }
+
