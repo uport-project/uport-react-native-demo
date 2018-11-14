@@ -52,9 +52,9 @@ export default class App extends Component {
     this.attestName = this.attestName.bind(this)
     this.signClaim = this.signClaim.bind(this)
 
-    uport.onResponse('disclosureReq').then(payload => this.handleLoginResult(payload.res))
-    uport.onResponse('updateShares').then(payload => this.handleBuySharesResult(payload.res))
-    uport.onResponse('signClaim').then(payload => this.handleSignClaimResult(payload))
+    uport.onResponse('disclosureReq').then(res => this.handleLoginResult(res.payload))
+    uport.onResponse('updateShares').then(res => this.handleBuySharesResult(res.payload))
+    uport.onResponse('verSigReq').then(res => this.handleSignClaimResult(res.payload))
 
     AsyncStorage.getItem('uportState').then(json => {
       const uportState = JSON.parse(json)
@@ -84,7 +84,7 @@ export default class App extends Component {
   }
 
   handleSignClaimResult (result) {
-    console.log(result)
+    console.log('signed claim', result)
   }
 
   handleLoginResult (result) {
@@ -142,7 +142,7 @@ export default class App extends Component {
   }
 
   attestName() {
-    uport.attest({
+    uport.sendVerification({
       sub: this.state.did,
       claim: {name: this.state.name},
       exp: new Date().getTime() + 30 * 24 * 60 * 60 * 1000,
@@ -150,10 +150,10 @@ export default class App extends Component {
   }
 
   signClaim() {
-    uport.createVerificationRequest({
+    uport.requestVerificationSignature({
       sub: this.state.did,
       unsignedClaim: {ClaimType: 'Claim value'},
-    }, 'signClaim')    
+    })    
   }
 
   handleLogout () {

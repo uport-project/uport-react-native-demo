@@ -61,20 +61,24 @@
 
 ```javascript
 import configureUportConnect from 'react-native-uport-connect'
+import Web3 from 'web3'
 
-const { uport, MNID } = configureUportConnect({
+const uport = configureUportConnect({
   appName: 'uPort Demo',
   appUrlScheme: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
   appAddress: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
   privateKey: 'c818c2665a8023102e430ef3b442f1915ed8dc3abcaffbc51c5394f03fc609e2',
 })
 
-const web3 = uport.getWeb3()
+const web3 = new Web3(uport.getProvider())
 
-uport.onResponse('disclosureReq').then(payload => console.log(payload.res))
+uport.onResponse('disclosureReq').then(res => console.log(res.payload))
 
-uport.requestCredentials({
+uport.requestDisclosure({
   requested: ['name', 'avatar'],
+  accountType: 'keypair',
+  network_id: '0x4',
+  notifications: false,
 })
 
 ```
