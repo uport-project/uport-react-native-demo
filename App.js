@@ -17,7 +17,7 @@ import {configureSharesContract, configureSimpleSharesContract} from './sharesCo
 
 const uport = configureUportConnect({
   appName: 'uPort Demo',
-  appUrlScheme: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
+  appUrlScheme: 'mnid2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
   appAddress: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
   privateKey: 'c818c2665a8023102e430ef3b442f1915ed8dc3abcaffbc51c5394f03fc609e2',
 })
