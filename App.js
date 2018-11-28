@@ -151,9 +151,8 @@ export default class App extends Component {
 
   signClaim() {
     uport.requestVerificationSignature({
-      sub: this.state.did,
-      unsignedClaim: {ClaimType: 'Claim value'},
-    })    
+      ClaimType: 'Claim value',
+    }, {sub: this.state.did})    
   }
 
   handleLogout () {
