@@ -4942,9 +4942,10 @@ react-is@^16.4.1:
   version "16.6.3"
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.6.3.tgz#d2d7462fcfcbe6ec0da56ad69047e47e56e7eac0"
 
-react-native-uport-connect@^1.0.1:
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/react-native-uport-connect/-/react-native-uport-connect-1.0.1.tgz#370b8280dba5d8f3db41e7554c9a2b1fcd240ec2"
+react-native-uport-connect@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/react-native-uport-connect/-/react-native-uport-connect-1.0.2.tgz#9de796b019af404e649439ef6f90e80aff8d1412"
+  integrity sha512-yCErQMGpXHj0v1oWCcbz6/tYOmwDh8pmq4H4wmeRRe5KQRFRpKw7gRBp4NQYMnqeK4C6xu4k9MJpHqeiT+Gdww==
   dependencies:
     babel-plugin-module-resolver "^3.1.1"
     babel-plugin-rewrite-require "^1.14.5"
