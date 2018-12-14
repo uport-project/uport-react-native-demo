@@ -59,9 +59,13 @@
 			<string>Editor</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>mnid2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG</string>
+				<string>uportdemoapp</string>
 			</array>
 		</dict>
 	</array>
+  <key>LSApplicationQueriesSchemes</key>
+  <array>
+    <string>me.uport</string>
+  </array>
 </dict>
 </plist>
