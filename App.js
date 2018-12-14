@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import configureUportConnect from 'react-native-uport-connect'
+import configureUportConnect, { isUportAppInstalled } from 'react-native-uport-connect'
 import {
   Text,
   View,
@@ -10,6 +10,7 @@ import {
   StatusBar,
   TextInput,
   AsyncStorage,
+  Alert
 } from 'react-native'
 import Web3 from 'web3'
 import styles from './styles'
@@ -17,9 +18,10 @@ import {configureSharesContract, configureSimpleSharesContract} from './sharesCo
 
 const uport = configureUportConnect({
   appName: 'uPort Demo',
-  appUrlScheme: 'mnid2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
-  appAddress: '2oeXufHGDpU51bfKBsZDdu7Je9weJ3r7sVG',
-  privateKey: 'c818c2665a8023102e430ef3b442f1915ed8dc3abcaffbc51c5394f03fc609e2',
+  appUrlScheme: 'uportdemoapp',
+  did: 'did:ethr:0xa2d0905267a93995ba1b98a449e1aebbbbf1c57f',
+  privateKey: '7ab83c1068eca322c7e15b9137bd80387a1ff1c2307d8ba8b73d822713f67ecb',
+  vc: ['/ipfs/QmcsqEgFwfJE5jo43DW495sKSY9GiYJ2ZstNyjiM3vjvpM'],
 })
 
 let web3 = null
@@ -114,14 +116,21 @@ export default class App extends Component {
   }
 
   handleLogin () {
-    this.setState({loginInProgress: true, errorMessage: null})
-
-    uport.requestDisclosure({
-      requested: ['name', 'avatar'],
-      accountType: 'keypair',
-      network_id: '0x4',
-      notifications: false,
+    
+    isUportAppInstalled().then(isInstalled => {
+      if(isInstalled) {
+        this.setState({loginInProgress: true, errorMessage: null})
+        uport.requestDisclosure({
+          requested: ['name', 'avatar'],
+          accountType: 'keypair',
+          network_id: '0x4',
+          notifications: false,
+        })
+      } else {
+        Alert.alert('uPort app not installed')
+      }
     })
+
   }
 
   loadShares() {
