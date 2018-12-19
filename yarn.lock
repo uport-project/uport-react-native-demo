@@ -6070,10 +6070,10 @@ react-is@^16.4.1:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-16.6.3.tgz#d2d7462fcfcbe6ec0da56ad69047e47e56e7eac0"
   integrity sha512-u7FDWtthB4rWibG/+mFbVd5FvdI20yde86qKGx4lVUTWmPlSWQ4QxbBIrrs+HnXGbxOUlUzTAP/VDmvCwaP2yA==
 
-react-native-uport-connect@^1.1.0-rc.5:
-  version "1.1.0-rc.5"
-  resolved "https://registry.yarnpkg.com/react-native-uport-connect/-/react-native-uport-connect-1.1.0-rc.5.tgz#6a8cc3267e33341ec263f88287239fb7846c598f"
-  integrity sha512-qU13W12jDfdD060Dlu6ZBRSmmIUolHm/PFTXcZYXIDQ5Ck0GAgmrcbNcfwSQnc7LYMt0mO95x253bOR932KP4w==
+react-native-uport-connect@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/react-native-uport-connect/-/react-native-uport-connect-1.1.1.tgz#3dc368cf54d313e299173d00d0cee21c9e4ddda2"
+  integrity sha512-pqGK9iTP+gNK9YwIL8KN+9VW62olZgqf3GWWx8lw7PUuDoW+YKeZJ5UaB3iq0FWD/GCCcNAYpt4zeDQzE9fRdg==
   dependencies:
     babel-plugin-module-resolver "^3.1.1"
     babel-plugin-rewrite-require "^1.14.5"
@@ -6086,8 +6086,8 @@ react-native-uport-connect@^1.1.0-rc.5:
     events "^2.0.0"
     process "^0.11.10"
     stream-browserify "^2.0.1"
-    uport-connect "^1.1.0-rc.5"
-    uport-credentials "^1.1.0-rc.2"
+    uport-connect "^1.1.1"
+    uport-credentials "^1.1.0"
     uport-transports "^0.2.0"
     vm-browserify "^1.1.0"
     web3 "0.19.1"
@@ -7347,10 +7347,10 @@ unset-value@^1.0.0:
     has-value "^0.3.1"
     isobject "^3.0.0"
 
-uport-connect@^1.1.0-rc.5:
-  version "1.1.0-rc.5"
-  resolved "https://registry.yarnpkg.com/uport-connect/-/uport-connect-1.1.0-rc.5.tgz#abe227db5933b9f041ebc922b9272d35da9f3318"
-  integrity sha512-bb8rrhmfxUIoeryftfhfbSWtxGskru3y5Nk6OQJFMpa1sRjV2HCg9tMW2gMIPWFbVyLROuTrW9yC4Vp8NmPehQ==
+uport-connect@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/uport-connect/-/uport-connect-1.1.1.tgz#a2cb02fa01c441cac62fa945f0384d62bb477251"
+  integrity sha512-li8ahaaW52f+CfVlEJSix0iORhrmLdH8q8Ai95Qx7GJtFgQWOWF3x5S0tkPBVozeJDBDwA8F+WUIokPX6DU0QA==
   dependencies:
     did-jwt "^0.0.8"
     ethjs-abi "^0.2.1"
@@ -7361,15 +7361,15 @@ uport-connect@^1.1.0-rc.5:
     pubsub-js "^1.6.0"
     qs "^6.2.1"
     store "^2.0.12"
-    uport-credentials "^1.1.0-rc.2"
+    uport-credentials "^1.1.0"
     uport-did-resolver "0.0.3"
     uport-lite "^1.0.2"
     uport-transports "^0.2.0"
 
-uport-credentials@^1.1.0-rc.2:
-  version "1.1.0-rc.2"
-  resolved "https://registry.yarnpkg.com/uport-credentials/-/uport-credentials-1.1.0-rc.2.tgz#0ab78379b3326d72bc5da72f214f2677eec8df4f"
-  integrity sha512-LEPYjEh4hCPicc75R/FzFIvm1cVmHtfpem3CRLsoG26PtoiQrW8FEjIltY6apFv9wFVB7EXV1UN9rowQIRyryA==
+uport-credentials@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/uport-credentials/-/uport-credentials-1.1.0.tgz#110e3e5c44f639755eaad82d6a7d8f576cca1e6c"
+  integrity sha512-8NqEa5A68eOjSIDXqYfWpgrxFcUj+MAa7+LUMgu+qGEUDuSEfChaiFpDurdx0ik3KQCLMhspiLnkZQiKUoe6JA==
   dependencies:
     did-jwt "^0.0.9"
     did-resolver "^0.0.4"
